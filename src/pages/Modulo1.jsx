@@ -7,9 +7,6 @@ import NavButtons from '../components/layout/NavButtons'
 import { useModuloStore } from '../store/useModuloStore'
 import { guardarModulo } from '../services/api'
 
-const { datosImportados } = useModuloStore()
-const estudiantes = datosImportados?.estudiantes || []
-
 const FUENTES = [
     { id: 'lms', label: 'Logs del LMS', icon: '🖥️', desc: 'Canvas, Moodle, Blackboard — actividad del estudiante' },
     { id: 'biometria', label: 'Biometría', icon: '👤', desc: 'Reconocimiento facial, verificación de identidad' },
@@ -20,7 +17,7 @@ const FUENTES = [
 ]
 
 const DECISIONES = [
-    { id: 'd1', label: 'Interrupción automatizada del examen', desc: 'Si nivel crítico de fraude en tiempo real → detener sesión' },
+    { id: 'd1', label: 'Interrupción automatizada del examen', desc: 'Si nivel crítico de fraude → detener sesión en tiempo real' },
     { id: 'd2', label: 'Activación de protocolo de auditoría', desc: 'Retener actas y exigir validación manual u oral' },
     { id: 'd3', label: 'Rediseño de evaluaciones por asignatura', desc: 'Pasar a casos prácticos en cursos con alta tasa de plagio' },
     { id: 'd4', label: 'Envío de alerta temprana a docentes', desc: 'Notificación inmediata cuando se detecta comportamiento sospechoso' },
@@ -28,11 +25,14 @@ const DECISIONES = [
 
 export default function Modulo1() {
     const { register, handleSubmit } = useForm()
-    const { guardarDatos, avanzar } = useModuloStore()
+    const { guardarDatos, avanzar, datosImportados } = useModuloStore()
     const [fuentesSel, setFuentesSel] = useState([])
     const [decisionesSel, setDecisionesSel] = useState([])
     const [cargando, setCargando] = useState(false)
     const navigate = useNavigate()
+
+    // Datos del archivo subido
+    const estudiantes = datosImportados?.estudiantes || []
 
     const toggleFuente = (id) => setFuentesSel(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
     const toggleDecision = (id) => setDecisionesSel(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
@@ -62,6 +62,67 @@ export default function Modulo1() {
                             </p>
                         </div>
 
+                        {/* ── TABLA DE DATOS IMPORTADOS ── */}
+                        {estudiantes.length > 0 && (
+                            <div className="bg-white/3 border border-surface-border rounded-xl overflow-hidden">
+                                <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                                        <p className="text-xs text-white/35 font-semibold uppercase tracking-widest">
+                                            Datos cargados — {datosImportados?.nombreArchivo}
+                                        </p>
+                                    </div>
+                                    <span className="text-xs text-brand-400 font-semibold">
+                                        {estudiantes.length} registros
+                                    </span>
+                                </div>
+                                <div className="overflow-x-auto" style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                                    <table className="w-full text-xs">
+                                        <thead className="sticky top-0 bg-surface-card z-10">
+                                            <tr className="border-b border-surface-border">
+                                                {['#', 'Nombre', 'Curso', 'Similitud', 'Cambios pestaña', 'Tiempo', 'Biometría', 'Riesgo'].map(h => (
+                                                    <th key={h} className="text-left px-3 py-2 text-white/30 font-medium whitespace-nowrap">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {estudiantes.map((e, i) => (
+                                                <tr key={i} className={`border-b border-surface-border/30 ${e.alertaFraude ? 'bg-red-500/5' : ''}`}>
+                                                    <td className="px-3 py-2 text-white/30">{i + 1}</td>
+                                                    <td className="px-3 py-2 text-white/70 whitespace-nowrap">{e.nombre}</td>
+                                                    <td className="px-3 py-2 text-white/45 whitespace-nowrap">{e.curso}</td>
+                                                    <td className="px-3 py-2">
+                                                        <span className={`font-mono ${e.similitudTexto > 40 ? 'text-red-400' : 'text-white/55'}`}>
+                                                            {e.similitudTexto}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <span className={`font-mono ${e.cambiosPestana > 10 ? 'text-amber-400' : 'text-white/55'}`}>
+                                                            {e.cambiosPestana}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-white/45 font-mono">{e.tiempoExamen} min</td>
+                                                    <td className="px-3 py-2">
+                                                        <span className={e.fallosBiometrico ? 'text-red-400 font-bold' : 'text-teal-400'}>
+                                                            {e.fallosBiometrico ? '✗ Fallo' : '✓ OK'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <span className={`px-2 py-0.5 rounded-md font-semibold ${e.nivelRiesgo === 'Alto' ? 'bg-red-500/20 text-red-400' :
+                                                                e.nivelRiesgo === 'Medio' ? 'bg-amber-500/20 text-amber-400' :
+                                                                    'bg-teal-500/20 text-teal-400'
+                                                            }`}>
+                                                            {e.nivelRiesgo}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Info del proyecto */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2 bg-white/3 border border-surface-border rounded-xl p-4">
@@ -88,6 +149,7 @@ export default function Modulo1() {
                                 <label className="text-xs text-white/40 font-medium block mb-2">Volumen de estudiantes</label>
                                 <select {...register('volumen')}
                                     className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/75">
+                                    <option>{estudiantes.length > 0 ? `${estudiantes.length} estudiantes (archivo cargado)` : '500 – 1,000 estudiantes'}</option>
                                     <option>500 – 1,000 estudiantes</option>
                                     <option>1,000 – 5,000 estudiantes</option>
                                     <option>Más de 5,000 estudiantes</option>
@@ -127,10 +189,10 @@ export default function Modulo1() {
                             </div>
                         </div>
 
-                        {/* Datos críticos del PDF */}
+                        {/* Datos críticos */}
                         <div className="bg-white/3 border border-surface-border rounded-xl p-4">
                             <label className="text-xs text-white/40 font-medium block mb-3">
-                                Datos críticos que el sistema debe capturar (según PDF)
+                                Datos críticos que el sistema captura
                             </label>
                             <div className="grid grid-cols-2 gap-2">
                                 {[
@@ -175,7 +237,7 @@ export default function Modulo1() {
                             </div>
                         </div>
 
-                        {/* Problemática del PDF */}
+                        {/* Problemática */}
                         <div className="bg-brand-600/8 border border-brand-600/20 rounded-xl p-4">
                             <p className="text-xs text-brand-300 font-semibold mb-2">Problemática central (del PDF)</p>
                             <p className="text-xs text-white/50 leading-relaxed italic">
