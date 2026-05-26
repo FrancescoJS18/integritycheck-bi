@@ -7,6 +7,9 @@ import NavButtons from '../components/layout/NavButtons'
 import { useModuloStore } from '../store/useModuloStore'
 import { guardarModulo } from '../services/api'
 
+const { datosImportados } = useModuloStore()
+const estudiantes = datosImportados?.estudiantes || []
+
 const FUENTES = [
     { id: 'lms', label: 'Logs del LMS', icon: '🖥️', desc: 'Canvas, Moodle, Blackboard — actividad del estudiante' },
     { id: 'biometria', label: 'Biometría', icon: '👤', desc: 'Reconocimiento facial, verificación de identidad' },

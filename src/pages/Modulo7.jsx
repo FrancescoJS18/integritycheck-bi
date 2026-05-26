@@ -5,6 +5,25 @@ import { useModuloStore } from '../store/useModuloStore'
 import { guardarModulo } from '../services/api'
 import { ShieldCheck, ExternalLink, CheckCircle, Loader2, BarChart3 } from 'lucide-react'
 
+// Al inicio del componente agrega:
+const { datosImportados } = useModuloStore()
+const estudiantes = datosImportados?.estudiantes || []
+
+// Calcula stats en tiempo real
+const statsReales = {
+    total: estudiantes.length,
+    fraudes: estudiantes.filter(e => e.alertaFraude).length,
+    alto: estudiantes.filter(e => e.nivelRiesgo === 'Alto').length,
+    medio: estudiantes.filter(e => e.nivelRiesgo === 'Medio').length,
+    bajo: estudiantes.filter(e => e.nivelRiesgo === 'Bajo').length,
+    promSimilitud: estudiantes.length
+        ? (estudiantes.reduce((a, e) => a + e.similitudTexto, 0) / estudiantes.length).toFixed(1)
+        : 0,
+    promCambios: estudiantes.length
+        ? (estudiantes.reduce((a, e) => a + e.cambiosPestana, 0) / estudiantes.length).toFixed(1)
+        : 0,
+}
+
 const POWER_BI_URL = 'TU_LINK_DE_POWER_BI_AQUI'
 
 const RESUMEN_MODULOS = [
@@ -67,20 +86,46 @@ export default function Modulo7() {
                         </div>
                     </div>
 
-                    {/* KPIs del PDF */}
+                    {/* KPIs dinámicos con datos reales */}
                     <div className="grid grid-cols-4 gap-3">
                         {[
-                            { label: 'Tasa exámenes sospechosos', valor: '≤ 10%', color: 'text-brand-400' },
-                            { label: 'Tiempo detección alerta', valor: '≤ 5 seg', color: 'text-teal-400' },
-                            { label: 'Tasa falsos positivos', valor: '≤ 5%', color: 'text-brand-400' },
-                            { label: 'Precisión modelo IA', valor: '≥ 90%', color: 'text-teal-400' },
+                            { label: 'Total estudiantes analizados', valor: statsReales.total, color: 'text-white' },
+                            { label: 'Con alerta de fraude', valor: statsReales.fraudes, color: 'text-red-400' },
+                            { label: 'Similitud texto promedio', valor: `${statsReales.promSimilitud}%`, color: 'text-amber-400' },
+                            { label: 'Cambios pestaña promedio', valor: statsReales.promCambios, color: 'text-brand-400' },
                         ].map(k => (
                             <div key={k.label} className="bg-white/4 border border-surface-border rounded-xl p-4 text-center">
-                                <p className={`text-xl font-bold ${k.color} mb-1`}>{k.valor}</p>
+                                <p className={`text-2xl font-bold ${k.color} mb-1`}>{k.valor}</p>
                                 <p className="text-xs text-white/35 leading-tight">{k.label}</p>
                             </div>
                         ))}
                     </div>
+
+                    {/* Distribución de riesgo */}
+                    {estudiantes.length > 0 && (
+                        <div className="bg-white/3 border border-surface-border rounded-xl p-4">
+                            <p className="text-xs text-white/35 font-semibold uppercase tracking-widest mb-4">
+                                Distribución de riesgo — {datosImportados?.nombreArchivo}
+                            </p>
+                            <div className="flex gap-4 items-end h-32 mb-2">
+                                {[
+                                    { label: 'Alto', val: statsReales.alto, color: 'bg-red-500', text: 'text-red-400' },
+                                    { label: 'Medio', val: statsReales.medio, color: 'bg-amber-500', text: 'text-amber-400' },
+                                    { label: 'Bajo', val: statsReales.bajo, color: 'bg-teal-500', text: 'text-teal-400' },
+                                ].map(b => {
+                                    const pct = statsReales.total > 0 ? (b.val / statsReales.total) * 100 : 0
+                                    return (
+                                        <div key={b.label} className="flex-1 flex flex-col items-center gap-2">
+                                            <span className={`text-xs font-bold ${b.text}`}>{b.val}</span>
+                                            <div className="w-full rounded-t-lg" style={{ height: `${Math.max(pct, 4)}%`, background: b.color.replace('bg-', '') === b.color ? '#6c5ce7' : undefined }}
+                                                className={`w-full rounded-t-lg ${b.color} opacity-70`} />
+                                            <span className="text-xs text-white/35">{b.label}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Botón Power BI */}
                     <div className="bg-gradient-to-br from-brand-600/15 to-brand-900/20 border border-brand-600/25 rounded-2xl p-8 text-center">

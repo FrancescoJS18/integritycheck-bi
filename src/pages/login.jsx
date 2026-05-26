@@ -35,14 +35,14 @@ export default function Login() {
         setLoading(true)
         setTimeout(() => {
             setUser('user-1', email.split('@')[0], 'token-demo')
-            navigate('/modulo/1')
+            navigate('/cargar')
         }, 800)
     }
 
     const handleAccesoRapido = (nombre) => {
         const alias = nombre.split(' ').slice(0, 2).join(' ')
         setUser('demo-' + alias, alias, 'token-demo')
-        navigate('/modulo/1')
+        navigate('/cargar')
     }
 
     return (
